@@ -1,6 +1,6 @@
 DC = docker compose
 
-.PHONY: dev down logs build backend-shell frontend-shell db-shell migrate seed
+.PHONY: dev down logs build backend-shell frontend-shell db-shell migrate seed seed-reset docs-install docs-serve docs-build
 
 dev:
 	$(DC) up --build
@@ -28,3 +28,15 @@ migrate:
 
 seed:
 	$(DC) exec backend flask seed
+
+seed-reset:
+	$(DC) exec backend flask seed --truncate
+
+docs-install:
+	python -m pip install -r docs/requirements.txt
+
+docs-serve:
+	python -m mkdocs serve
+
+docs-build:
+	python -m mkdocs build --strict

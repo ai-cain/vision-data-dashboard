@@ -29,6 +29,7 @@ frontend/node_modules/
 dist/
 coverage/
 .vite/
+site/
 *.tsbuildinfo
 
 postgres_data/
