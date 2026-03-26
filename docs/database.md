@@ -94,6 +94,38 @@ flask db migrate -m "describe the change"
 flask db upgrade
 ```
 
+## Python database admin commands
+
+The project now includes Python CLI commands for PostgreSQL lifecycle management.
+
+These are registered from the Flask app and implemented in:
+
+- `backend/app/services/db_admin_service.py`
+
+Available commands:
+
+```bash
+flask db-create
+flask db-reset --yes-i-know
+flask db-delete --yes-i-know
+```
+
+Behavior:
+
+- `db-create` creates the PostgreSQL database if it does not exist and can apply migrations
+- `db-reset` drops the target database, recreates it, runs migrations, and can reseed it
+- `db-delete` drops the target database completely
+
+The admin connection uses:
+
+- `POSTGRES_ADMIN_DB`
+
+Default:
+
+```text
+postgres
+```
+
 ## Seeder behavior
 
 The repository includes a Python seed flow in:
@@ -112,6 +144,6 @@ The schema is not maintained through:
 
 - `init.sql`
 - raw SQL reset scripts
-- ad hoc `DROP TABLE` startup logic
+- ad hoc shell-only reset logic
 
 That was an explicit design correction to keep PostgreSQL schema ownership in Python/Alembic.

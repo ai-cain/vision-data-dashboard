@@ -20,6 +20,12 @@ The repository already includes:
 - React dashboard with overview, devices, events, and inspections pages
 - MkDocs documentation in `docs/`
 
+Still pending:
+
+- Auth hardening beyond local optional mode
+- WebSocket live stream
+- Automated backend/frontend test suites
+
 ## Quick Start
 
 ### 1. Environment
@@ -94,11 +100,22 @@ PostgreSQL schema changes are applied with:
 flask db upgrade
 ```
 
+The project also includes Python CLI commands for database lifecycle management:
+
+```bash
+flask db-create
+flask db-reset --yes-i-know
+flask db-delete --yes-i-know
+```
+
 ## Useful Commands
 
 ```bash
 make dev
 make down
+make db-create
+make db-reset
+make db-delete
 make migrate
 make seed
 make seed-reset

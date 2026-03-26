@@ -20,6 +20,24 @@ make dev
 make down
 ```
 
+### Create PostgreSQL database
+
+```bash
+make db-create
+```
+
+### Reset PostgreSQL database
+
+```bash
+make db-reset
+```
+
+### Delete PostgreSQL database
+
+```bash
+make db-delete
+```
+
 ### Run migrations
 
 ```bash
@@ -96,5 +114,6 @@ Touch:
 - [ ] Backend imports compile
 - [ ] Frontend builds successfully
 - [ ] Migrations apply against PostgreSQL
+- [ ] Database lifecycle commands are available from Flask CLI
 - [ ] Swagger reflects the API
 - [ ] Docs build with `mkdocs build --strict`

@@ -22,6 +22,7 @@ class Config:
     ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY", "local-dev-key")
     AUTH_REQUIRED = os.environ.get("AUTH_REQUIRED", "false").lower() == "true"
     SQLALCHEMY_DATABASE_URI = _build_database_url()
+    POSTGRES_ADMIN_DB = os.environ.get("POSTGRES_ADMIN_DB", "postgres")
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     RESTX_MASK_SWAGGER = False
     ERROR_404_HELP = False

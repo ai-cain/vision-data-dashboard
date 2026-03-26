@@ -1,6 +1,6 @@
 DC = docker compose
 
-.PHONY: dev down logs build backend-shell frontend-shell db-shell migrate seed seed-reset docs-install docs-serve docs-build
+.PHONY: dev down logs build backend-shell frontend-shell db-shell db-create db-reset db-delete migrate seed seed-reset docs-install docs-serve docs-build
 
 dev:
 	$(DC) up --build
@@ -22,6 +22,15 @@ frontend-shell:
 
 db-shell:
 	$(DC) exec db psql -U $$POSTGRES_USER -d $$POSTGRES_DB
+
+db-create:
+	$(DC) exec backend flask db-create
+
+db-reset:
+	$(DC) exec backend flask db-reset --yes-i-know
+
+db-delete:
+	$(DC) exec backend flask db-delete --yes-i-know
 
 migrate:
 	$(DC) exec backend flask db upgrade

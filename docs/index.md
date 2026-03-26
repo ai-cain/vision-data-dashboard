@@ -37,6 +37,7 @@ flowchart LR
 - [x] Seed flow in Python
 - [x] Dashboard pages for overview, devices, events, and inspections
 - [x] MkDocs documentation
+- [x] Python CLI commands for PostgreSQL create/reset/delete workflows
 - [ ] Auth hardening beyond local optional mode
 - [ ] WebSocket live stream
 - [ ] Automated backend/frontend test suites
