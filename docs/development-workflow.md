@@ -56,6 +56,14 @@ make seed
 make seed-reset
 ```
 
+### Run tests
+
+```bash
+make test-backend
+make test-frontend
+make test
+```
+
 ### Serve docs
 
 ```bash
@@ -63,14 +71,20 @@ make docs-install
 make docs-serve
 ```
 
+### Run the local CI bundle
+
+```bash
+make ci-local
+```
+
 ## Suggested change flow
 
 ```mermaid
 flowchart TD
-    A[Change model or service] --> B[Update or add migration]
-    B --> C[Run flask db upgrade]
-    C --> D[Validate backend]
-    D --> E[Validate frontend]
+    A[Change model service or page] --> B[Update schema route hook or UI]
+    B --> C[Run backend tests]
+    C --> D[Run frontend tests]
+    D --> E[Run frontend build]
     E --> F[Build MkDocs]
     F --> G[Commit by phase]
 ```
@@ -92,6 +106,15 @@ Touch:
 - `backend/app/services/`
 - `backend/app/schemas/`
 
+### Realtime change
+
+Touch:
+
+- `backend/app/routes/stream.py`
+- `backend/app/services/live_stream_service.py`
+- `frontend/src/hooks/useDashboardLiveStream.ts`
+- `frontend/src/lib/live-stream.ts`
+
 ### Frontend data change
 
 Touch:
@@ -111,9 +134,11 @@ Touch:
 
 ## Validation checklist
 
-- [ ] Backend imports compile
-- [ ] Frontend builds successfully
-- [ ] Migrations apply against PostgreSQL
-- [ ] Database lifecycle commands are available from Flask CLI
-- [ ] Swagger reflects the API
-- [ ] Docs build with `mkdocs build --strict`
+Run these before pushing:
+
+- `cd backend && .venv\Scripts\pytest`
+- `cd frontend && npm run test`
+- `cd frontend && npm run build`
+- `python -m mkdocs build --strict`
+
+CI then re-checks the same areas from `.github/workflows/ci.yml`.

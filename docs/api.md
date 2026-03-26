@@ -1,6 +1,6 @@
 # API Reference
 
-Base path:
+REST base path:
 
 ```text
 /api/v1
@@ -10,6 +10,12 @@ Swagger UI:
 
 ```text
 /api/v1/docs
+```
+
+WebSocket path:
+
+```text
+/ws/events
 ```
 
 ## Devices
@@ -48,6 +54,39 @@ Swagger UI:
 | Method | Endpoint | Description |
 | --- | --- | --- |
 | `POST` | `/auth/token` | Issue JWT from API key |
+| `GET` | `/auth/me` | Resolve current auth context |
+
+## Realtime
+
+| Protocol | Endpoint | Description |
+| --- | --- | --- |
+| `WS` | `/ws/events` | Stream `event.created` and heartbeat envelopes |
+
+## Example auth token response
+
+```json
+{
+  "access_token": "<jwt>",
+  "token_type": "Bearer",
+  "expires_at": "2026-03-25T22:30:00Z",
+  "expires_in_seconds": 3600,
+  "principal": "dashboard-admin",
+  "scopes": ["dashboard:write"]
+}
+```
+
+## Example auth context response
+
+```json
+{
+  "authenticated": true,
+  "auth_required": true,
+  "principal": "dashboard-admin",
+  "auth_method": "api_key",
+  "scopes": ["dashboard:write"],
+  "expires_at": "2026-03-25T22:30:00Z"
+}
+```
 
 ## Example create device payload
 
@@ -76,15 +115,24 @@ Swagger UI:
 }
 ```
 
-## Example create inspection payload
+## Example WebSocket event envelope
 
 ```json
 {
-  "device_id": "11111111-1111-1111-1111-111111111111",
-  "job_id": "JOB-20260325-001",
-  "result": "fail",
-  "defect_type": "seal_breach",
-  "score": 0.88,
-  "image_path": "/captures/2026/03/25/frame-001.jpg"
+  "event": "event.created",
+  "data": {
+    "id": "22222222-2222-2222-2222-222222222222",
+    "device_id": "11111111-1111-1111-1111-111111111111",
+    "device_name": "Jetson-Line-03",
+    "event_type": "detection",
+    "confidence": 0.94,
+    "label": "cap",
+    "frame_ts": "2026-03-25T20:45:00Z",
+    "metadata": {
+      "bbox": [120, 60, 40, 42]
+    },
+    "created_at": "2026-03-25T20:45:03Z"
+  },
+  "sent_at": "2026-03-25T20:45:03Z"
 }
 ```

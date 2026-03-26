@@ -22,10 +22,13 @@ Main variables:
 | `POSTGRES_DB` | PostgreSQL database name |
 | `POSTGRES_USER` | PostgreSQL user |
 | `POSTGRES_PASSWORD` | PostgreSQL password |
-| `POSTGRES_HOST` | PostgreSQL host |
-| `POSTGRES_PORT` | PostgreSQL port |
 | `DATABASE_URL` | SQLAlchemy connection string |
+| `AUTH_REQUIRED` | Enables hardened write auth |
+| `AUTH_ALLOW_LOCAL_BYPASS` | Keeps local write bypass when auth is off |
+| `ADMIN_API_KEYS` | Comma-separated API keys for token issuance or direct write access |
+| `JWT_ACCESS_TOKEN_EXPIRES_MINUTES` | JWT access token lifetime |
 | `VITE_API_BASE_URL` | Frontend API base URL |
+| `VITE_WS_EVENTS_URL` | Frontend WebSocket URL for live events |
 
 ## Run with Docker
 
@@ -38,6 +41,7 @@ Services:
 - Frontend: `http://localhost:5173`
 - Backend: `http://localhost:5000`
 - Swagger: `http://localhost:5000/api/v1/docs`
+- WebSocket: `ws://localhost:5000/ws/events`
 - PostgreSQL: `localhost:5432`
 
 ## Run without Docker
@@ -48,7 +52,7 @@ Services:
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 flask db upgrade
 flask seed
 flask run
@@ -60,6 +64,13 @@ flask run
 cd frontend
 npm install
 npm run dev
+```
+
+## Verify the project locally
+
+```bash
+make test
+make docs-build
 ```
 
 ## Serve the docs
@@ -90,5 +101,5 @@ flowchart TD
     B --> C[Run flask db upgrade]
     C --> D[Seed local data]
     D --> E[Run frontend and backend]
-    E --> F[Use MkDocs to inspect docs]
+    E --> F[Run tests and docs build]
 ```

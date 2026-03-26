@@ -2,39 +2,35 @@
 
 Real-time dashboard for computer vision pipeline metrics, edge telemetry, and industrial inspection results.
 
-The project is built as a full-stack reference implementation:
+This repository is a full-stack reference implementation built around:
 
-- Backend: Flask 3, SQLAlchemy 2.0, Alembic, PostgreSQL 16
-- Frontend: React 18, TypeScript, Vite, Tailwind CSS, React Query, Recharts
-- Dev environment: Docker Compose
-- Documentation: MkDocs + Mermaid
+- Flask 3 + SQLAlchemy 2.0 + Alembic + PostgreSQL
+- React 18 + TypeScript + Vite + Tailwind CSS + React Query + Recharts
+- MkDocs + Mermaid documentation
+- Docker Compose for local development
 
-## Current Status
+## Implementation Status
 
-The repository already includes:
-
-- PostgreSQL-oriented backend configuration
-- SQLAlchemy models and Alembic migration in Python
-- REST API for devices, events, inspections, and dashboard stats
-- Seed data generator in Python
-- React dashboard with overview, devices, events, and inspections pages
-- MkDocs documentation in `docs/`
-
-Still pending:
-
-- Auth hardening beyond local optional mode
-- WebSocket live stream
-- Automated backend/frontend test suites
+- [x] Backend application factory
+- [x] SQLAlchemy models for devices, events, and inspections
+- [x] Alembic initial migration in Python
+- [x] Seed flow in Python
+- [x] Dashboard pages for overview, devices, events, and inspections
+- [x] MkDocs documentation
+- [x] Auth hardening beyond local optional mode
+- [x] WebSocket live stream
+- [x] Automated backend/frontend test suites
+- [x] CI skeleton
 
 ## Quick Start
 
-### 1. Environment
+### 1. Create the environment file
 
 ```bash
 cp .env.example .env
 ```
 
-### 2. Run with Docker
+### 2. Run the full stack
 
 ```bash
 make dev
@@ -45,6 +41,7 @@ Services:
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5000/api/v1`
 - Swagger UI: `http://localhost:5000/api/v1/docs`
+- WebSocket stream: `ws://localhost:5000/ws/events`
 - PostgreSQL: `localhost:5432`
 
 ## Local Development Without Docker
@@ -55,7 +52,7 @@ Services:
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 flask db upgrade
 flask seed
 flask run
@@ -69,9 +66,66 @@ npm install
 npm run dev
 ```
 
+## Realtime and Auth
+
+Write endpoints can run in two modes:
+
+- local bypass mode with `AUTH_REQUIRED=false`
+- hardened mode with `AUTH_REQUIRED=true`
+
+When hardened mode is enabled:
+
+- `POST /api/v1/auth/token` issues a JWT from a configured API key
+- `GET /api/v1/auth/me` resolves the current authenticated context
+- write routes accept `Authorization: Bearer <token>` or `X-API-Key: <key>`
+
+Realtime event updates are exposed through:
+
+- `WS /ws/events`
+
+The dashboard overview consumes that stream and updates recent events immediately while React Query polling remains as a fallback.
+
+## Database Definition
+
+The PostgreSQL schema is defined in Python, not through `init.sql`.
+
+Source of truth:
+
+- `backend/app/models/`
+- `backend/migrations/versions/`
+
+Database lifecycle commands:
+
+```bash
+flask db-create
+flask db-reset --yes-i-know
+flask db-delete --yes-i-know
+```
+
+Makefile shortcuts:
+
+```bash
+make db-create
+make db-reset
+make db-delete
+```
+
+## Quality Checks
+
+```bash
+make test-backend
+make test-frontend
+make test
+make docs-build
+```
+
+CI is defined in:
+
+- `.github/workflows/ci.yml`
+
 ## Documentation
 
-Detailed project docs live in `docs/` and can be served locally with MkDocs.
+Detailed docs live in `docs/` and are served through MkDocs.
 
 ```bash
 make docs-install
@@ -83,43 +137,6 @@ Or directly:
 ```bash
 python -m pip install -r docs/requirements.txt
 python -m mkdocs serve
-```
-
-## Database Definition
-
-The schema is not defined through an `init.sql` script.
-
-It is defined in Python in two places:
-
-- SQLAlchemy models in `backend/app/models/`
-- Alembic migration files in `backend/migrations/versions/`
-
-PostgreSQL schema changes are applied with:
-
-```bash
-flask db upgrade
-```
-
-The project also includes Python CLI commands for database lifecycle management:
-
-```bash
-flask db-create
-flask db-reset --yes-i-know
-flask db-delete --yes-i-know
-```
-
-## Useful Commands
-
-```bash
-make dev
-make down
-make db-create
-make db-reset
-make db-delete
-make migrate
-make seed
-make seed-reset
-make docs-build
 ```
 
 ## Docs Index
