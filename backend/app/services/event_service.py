@@ -9,7 +9,7 @@ from werkzeug.exceptions import NotFound
 from app.extensions import db
 from app.models.device import Device
 from app.models.event import VisionEvent
-from app.schemas.common import isoformat_value
+from app.schemas.common import isoformat_value, normalize_datetime
 from app.schemas.event import EventCreatePayload, EventFilters
 from app.services.common import PaginatedResult
 
@@ -74,7 +74,11 @@ def get_event_stats() -> dict[str, object]:
 
     now = datetime.now(timezone.utc)
     threshold = now - timedelta(hours=24)
-    recent_events = [event for event in events if event.frame_ts >= threshold]
+    recent_events = [
+        event
+        for event in events
+        if (normalize_datetime(event.frame_ts) or threshold) >= threshold
+    ]
 
     return {
         "total_events": len(events),
@@ -94,7 +98,10 @@ def build_hourly_series(events: list[VisionEvent], hours: int) -> list[dict[str,
     bucket_map = {bucket["timestamp"]: bucket for bucket in buckets}
 
     for event in events:
-        normalized = event.frame_ts.astimezone(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        event_dt = normalize_datetime(event.frame_ts)
+        if event_dt is None:
+            continue
+        normalized = event_dt.replace(minute=0, second=0, microsecond=0)
         key = isoformat_value(normalized)
         if key in bucket_map:
             bucket_map[key]["count"] = int(bucket_map[key]["count"]) + 1

@@ -94,8 +94,17 @@ def parse_optional_datetime(value: Any, key: str) -> datetime | None:
     return parse_datetime_value(value, key)
 
 
-def isoformat_value(value: datetime | None) -> str | None:
+def normalize_datetime(value: datetime | None) -> datetime | None:
     if value is None:
         return None
-    normalized = value.astimezone(timezone.utc).replace(microsecond=0)
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def isoformat_value(value: datetime | None) -> str | None:
+    normalized_value = normalize_datetime(value)
+    if normalized_value is None:
+        return None
+    normalized = normalized_value.replace(microsecond=0)
     return normalized.isoformat().replace("+00:00", "Z")

@@ -9,6 +9,7 @@ from werkzeug.exceptions import NotFound
 from app.extensions import db
 from app.models.device import Device
 from app.models.inspection import InspectionOutcome, InspectionResult
+from app.schemas.common import normalize_datetime
 from app.schemas.inspection import InspectionCreatePayload, InspectionFilters
 from app.services.common import PaginatedResult
 
@@ -90,7 +91,10 @@ def build_daily_trend(inspections: list[InspectionResult], days: int) -> list[di
     bucket_map = {bucket["date"]: bucket for bucket in buckets}
 
     for inspection in inspections:
-        key = inspection.created_at.astimezone(timezone.utc).date().isoformat()
+        inspection_dt = normalize_datetime(inspection.created_at)
+        if inspection_dt is None:
+            continue
+        key = inspection_dt.date().isoformat()
         if key not in bucket_map:
             continue
         bucket = bucket_map[key]

@@ -12,6 +12,7 @@ from app.models.inspection import InspectionOutcome, InspectionResult
 from app.schemas.device import serialize_device
 from app.schemas.event import serialize_event
 from app.schemas.inspection import serialize_inspection
+from app.schemas.common import normalize_datetime
 from app.services.event_service import build_hourly_series
 from app.services.inspection_service import build_daily_trend
 
@@ -43,7 +44,11 @@ def get_dashboard_overview() -> dict[str, object]:
 
     device_counts = Counter(device.status.value for device in devices)
     recent_threshold = datetime.now(timezone.utc) - timedelta(hours=24)
-    events_last_day = [event for event in all_events if event.frame_ts >= recent_threshold]
+    events_last_day = [
+        event
+        for event in all_events
+        if (normalize_datetime(event.frame_ts) or recent_threshold) >= recent_threshold
+    ]
 
     inspection_counts = Counter(inspection.result.value for inspection in inspections)
     total_inspections = len(inspections)
