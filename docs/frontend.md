@@ -6,8 +6,10 @@
 - TypeScript strict mode
 - Vite
 - Tailwind CSS
+- shadcn/ui-style base setup
 - React Query
 - Recharts
+- Radix Slot support for UI primitives
 
 ## Main UI sections
 
@@ -23,10 +25,11 @@ The application exposes four routes:
 - `src/pages/`: route pages
 - `src/components/layout/`: app shell and stat cards
 - `src/components/charts/`: Recharts wrappers
-- `src/components/ui/`: lightweight UI primitives
+- `src/components/ui/`: shadcn-style UI primitives
 - `src/hooks/`: React Query data hooks
 - `src/lib/api.ts`: axios client and fetch functions
 - `src/types/models.ts`: shared frontend domain types
+- `components.json`: shadcn registry-style component config
 
 ## Data flow
 
