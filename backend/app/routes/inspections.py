@@ -7,6 +7,7 @@ from app.schemas.inspection import (
     parse_inspection_create,
     parse_inspection_filters,
     serialize_inspection,
+    serialize_inspections,
 )
 from app.services.auth_service import enforce_write_access
 from app.services.inspection_service import (
@@ -29,7 +30,7 @@ class InspectionCollectionResource(Resource):
         filters = parse_inspection_filters(request.args.to_dict())
         result = list_inspections(filters)
         return {
-            "items": [serialize_inspection(inspection) for inspection in result.items],
+            "items": serialize_inspections(result.items),
             "page": result.page,
             "per_page": result.per_page,
             "total": result.total,

@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import request
 from flask_restx import Namespace, Resource
 
-from app.schemas.event import parse_event_create, parse_event_filters, serialize_event
+from app.schemas.event import parse_event_create, parse_event_filters, serialize_event, serialize_events
 from app.services.auth_service import enforce_write_access
 from app.services.event_service import create_event, get_event_stats, list_events
 
@@ -17,7 +17,7 @@ class EventCollectionResource(Resource):
         filters = parse_event_filters(request.args.to_dict())
         result = list_events(filters)
         return {
-            "items": [serialize_event(event) for event in result.items],
+            "items": serialize_events(result.items),
             "page": result.page,
             "per_page": result.per_page,
             "total": result.total,

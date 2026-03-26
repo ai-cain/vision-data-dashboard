@@ -1,97 +1,15 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Any, Mapping
+from enum import Enum
+from typing import Any, Mapping, TypeVar
 from uuid import UUID
 
+from marshmallow import Schema, ValidationError, fields
 from werkzeug.exceptions import BadRequest
 
 
-def ensure_mapping(data: Any) -> Mapping[str, Any]:
-    if not isinstance(data, Mapping):
-        raise BadRequest("Request body must be a JSON object")
-    return data
-
-
-def parse_required_string(data: Mapping[str, Any], key: str) -> str:
-    value = data.get(key)
-    if not isinstance(value, str) or not value.strip():
-        raise BadRequest(f"Field '{key}' is required")
-    return value.strip()
-
-
-def parse_optional_string(data: Mapping[str, Any], key: str) -> str | None:
-    value = data.get(key)
-    if value is None:
-        return None
-    if not isinstance(value, str):
-        raise BadRequest(f"Field '{key}' must be a string")
-    cleaned = value.strip()
-    return cleaned or None
-
-
-def parse_float_value(data: Mapping[str, Any], key: str) -> float:
-    raw_value = data.get(key)
-    if raw_value is None:
-        raise BadRequest(f"Field '{key}' is required")
-    try:
-        value = float(raw_value)
-    except (TypeError, ValueError) as error:
-        raise BadRequest(f"Field '{key}' must be a number") from error
-    return value
-
-
-def parse_integer_value(
-    value: Any,
-    key: str,
-    *,
-    default: int | None = None,
-    minimum: int | None = None,
-    maximum: int | None = None,
-) -> int:
-    if value in (None, ""):
-        if default is None:
-            raise BadRequest(f"Field '{key}' is required")
-        return default
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError) as error:
-        raise BadRequest(f"Field '{key}' must be an integer") from error
-
-    if minimum is not None and parsed < minimum:
-        raise BadRequest(f"Field '{key}' must be at least {minimum}")
-    if maximum is not None and parsed > maximum:
-        raise BadRequest(f"Field '{key}' must be at most {maximum}")
-    return parsed
-
-
-def parse_uuid_value(value: str, key: str) -> UUID:
-    try:
-        return UUID(str(value))
-    except ValueError as error:
-        raise BadRequest(f"Field '{key}' must be a valid UUID") from error
-
-
-def parse_datetime_value(value: Any, key: str) -> datetime:
-    if not isinstance(value, str) or not value.strip():
-        raise BadRequest(f"Field '{key}' must be an ISO datetime string")
-
-    normalized = value.strip().replace("Z", "+00:00")
-    try:
-        parsed = datetime.fromisoformat(normalized)
-    except ValueError as error:
-        raise BadRequest(f"Field '{key}' must be an ISO datetime string") from error
-
-    if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
-
-    return parsed.astimezone(timezone.utc)
-
-
-def parse_optional_datetime(value: Any, key: str) -> datetime | None:
-    if value in (None, ""):
-        return None
-    return parse_datetime_value(value, key)
+T = TypeVar("T")
 
 
 def normalize_datetime(value: datetime | None) -> datetime | None:
@@ -108,3 +26,106 @@ def isoformat_value(value: datetime | None) -> str | None:
         return None
     normalized = normalized_value.replace(microsecond=0)
     return normalized.isoformat().replace("+00:00", "Z")
+
+
+class UTCDateTime(fields.DateTime):
+    def _deserialize(
+        self,
+        value: Any,
+        attr: str | None,
+        data: Mapping[str, Any] | None,
+        **kwargs: Any,
+    ) -> datetime:
+        parsed = super()._deserialize(value, attr, data, **kwargs)
+        normalized = normalize_datetime(parsed)
+        if normalized is None:
+            raise ValidationError("Invalid datetime value.")
+        return normalized
+
+    def _serialize(
+        self,
+        value: datetime | None,
+        attr: str | None,
+        obj: Any,
+        **kwargs: Any,
+    ) -> str | None:
+        return isoformat_value(value)
+
+
+class EnumValueField(fields.Field):
+    def __init__(self, enum_class: type[Enum], *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.enum_class = enum_class
+
+    def _deserialize(
+        self,
+        value: Any,
+        attr: str | None,
+        data: Mapping[str, Any] | None,
+        **kwargs: Any,
+    ) -> Enum:
+        if not isinstance(value, str):
+            raise ValidationError(self._choices_message())
+
+        candidate = value.strip().lower()
+        for enum_value in self.enum_class:
+            if enum_value.value == candidate:
+                return enum_value
+        raise ValidationError(self._choices_message())
+
+    def _serialize(
+        self,
+        value: Enum | str | None,
+        attr: str | None,
+        obj: Any,
+        **kwargs: Any,
+    ) -> str | None:
+        if value is None:
+            return None
+        if isinstance(value, Enum):
+            return str(value.value)
+        return str(value)
+
+    def _choices_message(self) -> str:
+        options = ", ".join(str(item.value) for item in self.enum_class)
+        return f"Must be one of: {options}"
+
+
+def load_or_abort(schema: Schema, data: Any) -> Any:
+    try:
+        return schema.load(data)
+    except ValidationError as error:
+        raise BadRequest(_format_validation_error(error.messages)) from error
+
+
+def parse_uuid_value(value: str, key: str) -> UUID:
+    try:
+        return UUID(str(value))
+    except ValueError as error:
+        raise BadRequest(f"Field '{key}' must be a valid UUID") from error
+
+
+def dump_with_schema(schema: Schema, obj: Any) -> dict[str, Any]:
+    return schema.dump(obj)
+
+
+def dump_many_with_schema(schema: Schema, items: list[Any]) -> list[dict[str, Any]]:
+    return schema.dump(items)
+
+
+def _format_validation_error(messages: dict[str, Any] | list[Any] | str) -> str:
+    if isinstance(messages, str):
+        return messages
+    if isinstance(messages, list):
+        return "; ".join(_format_validation_error(item) for item in messages)
+
+    flattened: list[str] = []
+    for key, value in messages.items():
+        if isinstance(value, list):
+            flattened.extend(f"{key}: {_format_validation_error(item)}" for item in value)
+        elif isinstance(value, dict):
+            nested = _format_validation_error(value)
+            flattened.append(f"{key}: {nested}")
+        else:
+            flattened.append(f"{key}: {value}")
+    return "; ".join(flattened)

@@ -6,6 +6,7 @@
 - Flask-RESTX
 - SQLAlchemy 2.0
 - Flask-Migrate / Alembic
+- Marshmallow
 - Flask-JWT-Extended
 - PostgreSQL via `psycopg`
 
@@ -69,9 +70,10 @@ This is where:
 
 ## Validation and serialization
 
-The project uses typed parser/serializer helpers in:
+The project uses Marshmallow-backed parser/serializer modules in:
 
 - `schemas/common.py`
+- `schemas/auth.py`
 - `schemas/device.py`
 - `schemas/event.py`
 - `schemas/inspection.py`
@@ -79,6 +81,7 @@ The project uses typed parser/serializer helpers in:
 These files handle:
 
 - request body validation
+- query parameter validation
 - UUID parsing
 - datetime normalization
 - response serialization

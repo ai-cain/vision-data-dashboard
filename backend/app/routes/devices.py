@@ -9,6 +9,7 @@ from app.schemas.device import (
     parse_device_status_update,
     serialize_device,
     serialize_device_detail,
+    serialize_devices,
 )
 from app.services.auth_service import enforce_write_access
 from app.services.device_service import (
@@ -27,7 +28,7 @@ class DeviceCollectionResource(Resource):
     def get(self) -> tuple[dict[str, object], int]:
         devices = list_devices()
         return {
-            "items": [serialize_device(device) for device in devices],
+            "items": serialize_devices(devices),
             "total": len(devices),
         }, 200
 

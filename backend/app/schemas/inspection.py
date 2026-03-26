@@ -1,20 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any
 from uuid import UUID
 
-from werkzeug.exceptions import BadRequest
+from marshmallow import Schema, fields, post_load, validate, validates_schema
+from marshmallow.exceptions import ValidationError
 
 from app.models.inspection import InspectionOutcome, InspectionResult
 from app.schemas.common import (
-    ensure_mapping,
-    isoformat_value,
-    parse_float_value,
-    parse_integer_value,
-    parse_optional_string,
-    parse_required_string,
-    parse_uuid_value,
+    UTCDateTime,
+    EnumValueField,
+    dump_many_with_schema,
+    dump_with_schema,
+    load_or_abort,
 )
 
 
@@ -36,56 +35,67 @@ class InspectionFilters:
     result: InspectionOutcome | None
 
 
+class InspectionCreateSchema(Schema):
+    device_id = fields.UUID(required=True)
+    job_id = fields.Str(required=True, validate=validate.Length(min=1))
+    result = EnumValueField(InspectionOutcome, required=True)
+    defect_type = fields.Str(load_default=None, allow_none=True)
+    score = fields.Float(required=True, validate=validate.Range(min=0, max=1))
+    image_path = fields.Str(required=True, validate=validate.Length(min=1))
+
+    @validates_schema
+    def validate_payload(self, data: dict[str, Any], **kwargs: Any) -> None:
+        if data["result"] == InspectionOutcome.FAIL and not data.get("defect_type"):
+            raise ValidationError("defect_type is required when result is fail", field_name="defect_type")
+
+    @post_load
+    def make_payload(self, data: dict[str, Any], **kwargs: Any) -> InspectionCreatePayload:
+        return InspectionCreatePayload(**data)
+
+
+class InspectionFilterSchema(Schema):
+    page = fields.Int(load_default=1, validate=validate.Range(min=1))
+    per_page = fields.Int(load_default=25, validate=validate.Range(min=1, max=100))
+    device_id = fields.UUID(load_default=None, allow_none=True, data_key="device")
+    result = EnumValueField(InspectionOutcome, load_default=None, allow_none=True)
+
+    @post_load
+    def make_payload(self, data: dict[str, Any], **kwargs: Any) -> InspectionFilters:
+        return InspectionFilters(**data)
+
+
+class InspectionResponseSchema(Schema):
+    id = fields.UUID()
+    device_id = fields.UUID()
+    device_name = fields.Method("get_device_name")
+    job_id = fields.Str()
+    result = EnumValueField(InspectionOutcome)
+    defect_type = fields.Str(allow_none=True)
+    score = fields.Float()
+    image_path = fields.Str()
+    created_at = UTCDateTime()
+
+    def get_device_name(self, obj: InspectionResult) -> str | None:
+        return obj.device.name if obj.device else None
+
+
+inspection_create_schema = InspectionCreateSchema()
+inspection_filter_schema = InspectionFilterSchema()
+inspection_response_schema = InspectionResponseSchema()
+inspection_response_list_schema = InspectionResponseSchema(many=True)
+
+
 def parse_inspection_create(data: Any) -> InspectionCreatePayload:
-    payload = ensure_mapping(data)
-    score = parse_float_value(payload, "score")
-    if score < 0 or score > 1:
-        raise BadRequest("Field 'score' must be between 0 and 1")
-
-    result = _parse_outcome(payload.get("result"))
-    defect_type = parse_optional_string(payload, "defect_type")
-    if result == InspectionOutcome.FAIL and defect_type is None:
-        raise BadRequest("Field 'defect_type' is required when result is 'fail'")
-
-    return InspectionCreatePayload(
-        device_id=parse_uuid_value(parse_required_string(payload, "device_id"), "device_id"),
-        job_id=parse_required_string(payload, "job_id"),
-        result=result,
-        defect_type=defect_type,
-        score=score,
-        image_path=parse_required_string(payload, "image_path"),
-    )
+    return load_or_abort(inspection_create_schema, data)
 
 
-def parse_inspection_filters(data: Mapping[str, Any]) -> InspectionFilters:
-    device_id = parse_optional_string(data, "device")
-    raw_result = data.get("result")
-    return InspectionFilters(
-        page=parse_integer_value(data.get("page"), "page", default=1, minimum=1),
-        per_page=parse_integer_value(data.get("per_page"), "per_page", default=25, minimum=1, maximum=100),
-        device_id=parse_uuid_value(device_id, "device") if device_id else None,
-        result=_parse_outcome(raw_result) if raw_result not in (None, "") else None,
-    )
+def parse_inspection_filters(data: dict[str, Any]) -> InspectionFilters:
+    return load_or_abort(inspection_filter_schema, data)
 
 
 def serialize_inspection(inspection: InspectionResult) -> dict[str, object]:
-    return {
-        "id": str(inspection.id),
-        "device_id": str(inspection.device_id),
-        "device_name": inspection.device.name if inspection.device else None,
-        "job_id": inspection.job_id,
-        "result": inspection.result.value,
-        "defect_type": inspection.defect_type,
-        "score": inspection.score,
-        "image_path": inspection.image_path,
-        "created_at": isoformat_value(inspection.created_at),
-    }
+    return dump_with_schema(inspection_response_schema, inspection)
 
 
-def _parse_outcome(value: Any) -> InspectionOutcome:
-    if not isinstance(value, str):
-        raise BadRequest("Field 'result' must be one of: pass, fail, uncertain")
-    try:
-        return InspectionOutcome(value.strip().lower())
-    except ValueError as error:
-        raise BadRequest("Field 'result' must be one of: pass, fail, uncertain") from error
+def serialize_inspections(inspections: list[InspectionResult]) -> list[dict[str, object]]:
+    return dump_many_with_schema(inspection_response_list_schema, inspections)
