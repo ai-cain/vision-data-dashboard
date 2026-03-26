@@ -10,8 +10,9 @@ from app.extensions import db
 from app.models.device import Device
 from app.models.event import VisionEvent
 from app.schemas.common import isoformat_value, normalize_datetime
-from app.schemas.event import EventCreatePayload, EventFilters
+from app.schemas.event import EventCreatePayload, EventFilters, serialize_event
 from app.services.common import PaginatedResult
+from app.services.live_stream_service import live_event_stream
 
 
 def list_events(filters: EventFilters) -> PaginatedResult[VisionEvent]:
@@ -56,6 +57,7 @@ def create_event(payload: EventCreatePayload) -> VisionEvent:
     device.last_seen = datetime.now(timezone.utc)
     db.session.commit()
     db.session.refresh(event)
+    live_event_stream.publish("event.created", serialize_event(event))
     return event
 
 

@@ -6,7 +6,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import HTTPException
 
 from app.config import Config
-from app.extensions import db, jwt, migrate
+from app.extensions import db, jwt, migrate, sock
 
 
 def create_app(config_class: type[Config] = Config) -> Flask:
@@ -37,12 +37,16 @@ def register_extensions(app: Flask) -> None:
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
+    sock.init_app(app)
+    register_jwt_handlers()
 
 
 def register_routes(app: Flask) -> None:
     from app.routes.api import api_blueprint
+    from app.routes.stream import register_stream_routes
 
     app.register_blueprint(api_blueprint)
+    register_stream_routes(app)
 
 
 def register_error_handlers(app: Flask) -> None:
@@ -57,6 +61,30 @@ def register_error_handlers(app: Flask) -> None:
     def handle_unexpected_error(error: Exception) -> tuple[dict[str, object], int]:
         app.logger.exception("Unexpected application error", exc_info=error)
         return {"message": "Internal server error", "status": 500}, 500
+
+
+def register_jwt_handlers() -> None:
+    @jwt.expired_token_loader
+    def handle_expired_token(
+        jwt_header: dict[str, object],
+        jwt_payload: dict[str, object],
+    ) -> tuple[dict[str, object], int]:
+        return {"message": "JWT has expired", "status": 401}, 401
+
+    @jwt.invalid_token_loader
+    def handle_invalid_token(error: str) -> tuple[dict[str, object], int]:
+        return {"message": f"Invalid JWT: {error}", "status": 401}, 401
+
+    @jwt.unauthorized_loader
+    def handle_missing_token(error: str) -> tuple[dict[str, object], int]:
+        return {"message": error, "status": 401}, 401
+
+    @jwt.revoked_token_loader
+    def handle_revoked_token(
+        jwt_header: dict[str, object],
+        jwt_payload: dict[str, object],
+    ) -> tuple[dict[str, object], int]:
+        return {"message": "JWT has been revoked", "status": 401}, 401
 
 
 def register_cli(app: Flask) -> None:

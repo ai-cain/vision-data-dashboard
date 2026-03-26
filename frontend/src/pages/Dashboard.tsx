@@ -7,10 +7,12 @@ import { StatCard } from "@/components/layout/StatCard";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { useDashboard } from "@/hooks/useDashboard";
+import { useDashboardLiveStream } from "@/hooks/useDashboardLiveStream";
 import { formatDateTime, statusTone } from "@/lib/utils";
 
 export function DashboardPage() {
   const overview = useDashboard();
+  const connectionState = useDashboardLiveStream();
 
   if (overview.isLoading) {
     return <Card>Loading dashboard metrics...</Card>;
@@ -22,6 +24,16 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <section className="flex items-center justify-between rounded-[28px] border border-ink/10 bg-paper/80 px-5 py-4 shadow-panel backdrop-blur">
+        <div>
+          <p className="font-mono text-xs uppercase tracking-[0.2em] text-ink/45">Live stream</p>
+          <p className="mt-2 text-sm text-ink/70">
+            Recent events now update immediately over WebSocket while query polling remains as fallback.
+          </p>
+        </div>
+        <Badge className={liveTone(connectionState)}>{liveLabel(connectionState)}</Badge>
+      </section>
+
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Devices Online"
@@ -137,4 +149,30 @@ export function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function liveTone(state: "connecting" | "open" | "closed" | "error") {
+  switch (state) {
+    case "open":
+      return "bg-teal/15 text-teal border-teal/30";
+    case "connecting":
+      return "bg-lemon/25 text-ink border-lemon/40";
+    case "closed":
+      return "bg-ink/10 text-ink/70 border-ink/20";
+    case "error":
+      return "bg-danger/10 text-danger border-danger/30";
+  }
+}
+
+function liveLabel(state: "connecting" | "open" | "closed" | "error") {
+  switch (state) {
+    case "open":
+      return "Live Connected";
+    case "connecting":
+      return "Live Connecting";
+    case "closed":
+      return "Live Closed";
+    case "error":
+      return "Live Error";
+  }
 }

@@ -1,6 +1,6 @@
 DC = docker compose
 
-.PHONY: dev down logs build backend-shell frontend-shell db-shell db-create db-reset db-delete migrate seed seed-reset docs-install docs-serve docs-build
+.PHONY: dev down logs build backend-shell frontend-shell db-shell db-create db-reset db-delete migrate seed seed-reset docs-install docs-serve docs-build test-backend test-frontend test ci-local
 
 dev:
 	$(DC) up --build
@@ -49,3 +49,17 @@ docs-serve:
 
 docs-build:
 	python -m mkdocs build --strict
+
+test-backend:
+	backend/.venv/Scripts/python -m pytest backend/tests
+
+test-frontend:
+	cd frontend && npm run test
+
+test:
+	$(MAKE) test-backend
+	$(MAKE) test-frontend
+
+ci-local:
+	$(MAKE) test
+	$(MAKE) docs-build

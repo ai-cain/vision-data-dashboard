@@ -101,6 +101,12 @@ export interface DashboardOverview {
   latest_inspections: InspectionResult[];
 }
 
+export interface LiveStreamEnvelope {
+  event: string;
+  data: unknown;
+  sent_at?: string;
+}
+
 export interface EventFilters {
   device?: string;
   type?: EventType | "";
