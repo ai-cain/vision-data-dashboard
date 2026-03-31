@@ -1,26 +1,22 @@
-# vision-data-dashboard
+# Vision Data Dashboard
 
-Real-time dashboard for computer vision pipeline metrics, edge telemetry, and industrial inspection results.
+Vision Data Dashboard is a full-stack reference app for monitoring computer vision pipelines, edge telemetry, and industrial inspection results in real time.
 
-This repository is a full-stack reference implementation built around:
+## What This Repo Includes
 
-- Flask 3 + SQLAlchemy 2.0 + Alembic + PostgreSQL
-- React 18 + TypeScript + Vite + Tailwind CSS + React Query + Recharts
-- MkDocs + Mermaid documentation
-- Docker Compose for local development
+- Flask API for telemetry, events, inspections, auth, and Swagger docs
+- React dashboard for overview, devices, events, and inspections
+- WebSocket live stream for recent event updates
+- PostgreSQL schema managed with SQLAlchemy and Alembic
+- MkDocs documentation with Mermaid diagrams
+- Docker Compose setup for local development
 
-## Implementation Status
+## Stack
 
-- [x] Backend application factory
-- [x] SQLAlchemy models for devices, events, and inspections
-- [x] Alembic initial migration in Python
-- [x] Seed flow in Python
-- [x] Dashboard pages for overview, devices, events, and inspections
-- [x] MkDocs documentation
-- [x] Auth hardening beyond local optional mode
-- [x] WebSocket live stream
-- [x] Automated backend/frontend test suites
-- [x] CI skeleton
+- Backend: Flask 3, SQLAlchemy 2.0, Alembic, PostgreSQL
+- Frontend: React 18, TypeScript, Vite, Tailwind CSS, React Query, Recharts
+- Docs: MkDocs
+- Tooling: Docker Compose, Makefile, backend/frontend test suites
 
 ## Quick Start
 
@@ -30,13 +26,19 @@ This repository is a full-stack reference implementation built around:
 cp .env.example .env
 ```
 
-### 2. Run the full stack
+PowerShell alternative:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### 2. Start the full stack
 
 ```bash
 make dev
 ```
 
-Services:
+### 3. Open the services
 
 - Frontend: `http://localhost:5173`
 - Backend API: `http://localhost:5000/api/v1`
@@ -44,11 +46,18 @@ Services:
 - WebSocket stream: `ws://localhost:5000/ws/events`
 - PostgreSQL: `localhost:5432`
 
+Useful helpers:
+
+```bash
+make logs
+make down
+```
+
 ## Local Development Without Docker
 
 ### Backend
 
-```bash
+```powershell
 cd backend
 python -m venv .venv
 .venv\Scripts\activate
@@ -60,17 +69,17 @@ flask run
 
 ### Frontend
 
-```bash
+```powershell
 cd frontend
 npm install
 npm run dev
 ```
 
-## Realtime and Auth
+## Auth and Realtime
 
-Write endpoints can run in two modes:
+Write endpoints support two modes:
 
-- local bypass mode with `AUTH_REQUIRED=false`
+- local development mode with `AUTH_REQUIRED=false`
 - hardened mode with `AUTH_REQUIRED=true`
 
 When hardened mode is enabled:
@@ -83,11 +92,11 @@ Realtime event updates are exposed through:
 
 - `WS /ws/events`
 
-The dashboard overview consumes that stream and updates recent events immediately while React Query polling remains as a fallback.
+The dashboard consumes that stream for recent event updates, with React Query polling as a fallback.
 
-## Database Definition
+## Database Workflow
 
-The PostgreSQL schema is defined in Python, not through `init.sql`.
+The PostgreSQL schema is defined in Python, not through a raw SQL bootstrap script.
 
 Source of truth:
 
@@ -108,20 +117,21 @@ Makefile shortcuts:
 make db-create
 make db-reset
 make db-delete
+make seed
+make seed-reset
 ```
 
-## Quality Checks
+## Testing and Docs
 
 ```bash
 make test-backend
 make test-frontend
 make test
 make docs-build
+make docs-serve
 ```
 
-CI is defined in:
-
-- `.github/workflows/ci.yml`
+CI is defined in `.github/workflows/ci.yml`.
 
 ## Documentation
 
@@ -139,7 +149,7 @@ python -m pip install -r docs/requirements.txt
 python -m mkdocs serve
 ```
 
-## Docs Index
+Docs index:
 
 - [Documentation home](docs/index.md)
 - [Getting started](docs/getting-started.md)
